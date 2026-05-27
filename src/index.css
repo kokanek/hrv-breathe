@@ -1,11 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --color-brand-dark: #0f172a;
-  --color-brand-green: #1a3a2a;
-  --color-brand-accent: #2d6a4f;
-}
-
 html, body, #root {
   height: 100%;
   margin: 0;
@@ -18,29 +12,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  25% { background-position: 100% 0%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
-  100% { background-position: 0% 50%; }
-}
-
 .gradient-bg {
-  background: linear-gradient(
-    -45deg,
-    #1e3a5f,
-    #4a2060,
-    #2d6a4f,
-    #b45309,
-    #1e40af,
-    #7c3aed
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 24s ease infinite;
+  background:
+    radial-gradient(ellipse 65% 55% at 5% 8%, rgba(251, 196, 181, 0.55) 0%, transparent 58%),
+    radial-gradient(ellipse 58% 50% at 95% 5%, rgba(184, 221, 181, 0.5) 0%, transparent 58%),
+    radial-gradient(ellipse 58% 55% at 93% 95%, rgba(168, 208, 212, 0.45) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 60% at 5% 95%, rgba(216, 228, 152, 0.45) 0%, transparent 58%),
+    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(196, 184, 232, 0.2) 0%, transparent 55%),
+    #f2f8f5;
 }
 
 @keyframes breatheGlow {
-  0%, 100% { box-shadow: 0 0 40px rgba(255,255,255,0.1), 0 0 80px rgba(255,255,255,0.05); }
-  50% { box-shadow: 0 0 60px rgba(255,255,255,0.2), 0 0 120px rgba(255,255,255,0.1); }
+  0%, 100% { box-shadow: 0 8px 40px rgba(100, 180, 160, 0.12), 0 0 0 0 rgba(100, 180, 160, 0.06); }
+  50% { box-shadow: 0 12px 60px rgba(100, 180, 160, 0.22), 0 0 0 12px rgba(100, 180, 160, 0.04); }
 }
