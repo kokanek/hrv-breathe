@@ -66,9 +66,15 @@ export default function SessionPage() {
 
   return (
     <div className="h-full relative overflow-hidden">
-      {/* Gradient Background */}
+      {/* Pastel gradient background */}
       <div className="absolute inset-0 gradient-bg" />
-      <div className="absolute inset-0 bg-black/20" />
+
+      {/* Decorative dots */}
+      <div className="absolute top-[18%] right-[14%] w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(168,208,212,0.5)' }} />
+      <div className="absolute top-[32%] left-[12%] w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(251,196,181,0.6)' }} />
+      <div className="absolute bottom-[32%] right-[18%] w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(184,221,181,0.55)' }} />
+      <div className="absolute bottom-[20%] left-[16%] w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(216,228,152,0.5)' }} />
+      <div className="absolute top-[55%] right-[10%] w-1 h-1 rounded-full" style={{ backgroundColor: 'rgba(196,184,232,0.6)' }} />
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col">
@@ -76,13 +82,13 @@ export default function SessionPage() {
         <header className="flex items-center justify-between px-6 pt-6 pb-4">
           <button
             onClick={() => navigate('/')}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow-sm"
           >
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <span className="text-white font-semibold text-lg">Breathe Bubbles</span>
+          <span className="text-gray-800 font-semibold text-lg">Breathe Bubbles</span>
           <div className="w-10 h-10" />
         </header>
 
@@ -93,20 +99,20 @@ export default function SessionPage() {
 
         {/* Timer + Controls */}
         <div className="flex flex-col items-center pb-10 px-6">
-          <p className="text-white/90 text-5xl font-light tracking-wider mb-3 tabular-nums">
+          <p className="text-gray-800 text-5xl font-light tracking-wider mb-3 tabular-nums">
             {timeDisplay}
           </p>
 
           <div className="flex items-center gap-2 mb-8">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-white/60 text-xs font-medium tracking-widest uppercase">
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#a8d0d4' }} />
+            <span className="text-gray-500 text-xs font-medium tracking-widest uppercase">
               Session Active
             </span>
           </div>
 
           <button
             onClick={stopSession}
-            className="w-full max-w-xs py-4 rounded-2xl bg-emerald-800/90 backdrop-blur-sm text-white font-semibold text-lg flex items-center justify-center gap-2 shadow-xl"
+            className="w-full max-w-xs py-4 rounded-2xl bg-gray-800 text-white font-semibold text-lg flex items-center justify-center gap-2 shadow-lg"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <rect x="6" y="6" width="12" height="12" rx="2" />
