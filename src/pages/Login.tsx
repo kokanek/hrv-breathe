@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import BreathingCircle from '../components/BreathingCircle'
 import { useBreathingCycle } from '../hooks/useBreathingCycle'
 
 export default function Login() {
 
+  const navigate = useNavigate()
   const { phase } = useBreathingCycle(true, true)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -11,6 +13,29 @@ export default function Login() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     // implement call to login endpoint here
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid username or password');
+      }
+
+      const data = await response.json();
+
+      // Save the JWT token securely in the browser
+      localStorage.setItem('hrv_app_token', data.token);
+
+      // Redirect them to the main app dashboard
+      navigate('/');
+
+    } catch (error) {
+      console.log(error.message);
+    }
+
   }
 
   return (
