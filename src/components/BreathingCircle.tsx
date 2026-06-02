@@ -4,9 +4,10 @@ import type { Phase } from '../hooks/useBreathingCycle'
 interface Props {
   phase: Phase
   isRunning: boolean
+  isLoginPage?: boolean
 }
 
-export default function BreathingCircle({ phase, isRunning }: Props) {
+export default function BreathingCircle({ phase, isRunning, isLoginPage }: Props) {
   const ease = [0.4, 0, 0.2, 1] as [number, number, number, number]
 
   const variants = {
@@ -57,9 +58,9 @@ export default function BreathingCircle({ phase, isRunning }: Props) {
         animate={currentState}
         initial="idle"
       >
-        <span className="text-gray-700 text-xl font-semibold tracking-[0.18em] uppercase select-none">
+        {!isLoginPage && <span className="text-gray-700 text-xl font-semibold tracking-[0.18em] uppercase select-none">
           {isRunning ? (phase === 'inhale' ? 'Inhale' : 'Exhale') : 'Ready'}
-        </span>
+        </span>}
       </motion.div>
     </div>
   )

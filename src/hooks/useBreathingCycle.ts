@@ -5,7 +5,7 @@ export type Phase = 'inhale' | 'exhale'
 
 const PHASE_DURATION = 6000
 
-export function useBreathingCycle(isRunning: boolean) {
+export function useBreathingCycle(isRunning: boolean, isLoginPage = false) {
   const [phase, setPhase] = useState<Phase>('inhale')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -23,14 +23,16 @@ export function useBreathingCycle(isRunning: boolean) {
     // (which cleanup sets to null) means the restart works correctly.
     if (intervalRef.current) return
 
-    playInhaleBeep()
+    if (!isLoginPage) playInhaleBeep()
     setPhase('inhale')
 
     intervalRef.current = setInterval(() => {
       setPhase(prev => {
         const next = prev === 'inhale' ? 'exhale' : 'inhale'
-        if (next === 'inhale') playInhaleBeep()
-        else playExhaleBeep()
+        if (!isLoginPage) {
+          if (next === 'inhale') playInhaleBeep()
+          else playExhaleBeep()
+        }
         return next
       })
     }, PHASE_DURATION)
@@ -41,7 +43,7 @@ export function useBreathingCycle(isRunning: boolean) {
         intervalRef.current = null
       }
     }
-  }, [isRunning])
+  }, [isRunning, isLoginPage])
 
   return { phase }
 }

@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import SessionPage from './pages/SessionPage'
 import ActivityPage from './pages/ActivityPage'
+import LoginPage from './pages/Login'
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/session" element={<SessionPage />} />
         <Route path="/activity" element={<ActivityPage />} />
+        <Route path="/login" element={<LoginPage />} />
       </Routes>
     </div>
   )
