@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { playInhaleBeep, playExhaleBeep } from '../utils/audio'
 
 export type Phase = 'inhale' | 'exhale'
@@ -8,37 +8,32 @@ const PHASE_DURATION = 6000
 export function useBreathingCycle(isRunning: boolean) {
   const [phase, setPhase] = useState<Phase>('inhale')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const hasStartedRef = useRef(false)
 
-  const startCycle = useCallback(() => {
-    if (hasStartedRef.current) return
-    hasStartedRef.current = true
+  useEffect(() => {
+    if (!isRunning) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+      return
+    }
+
+    // intervalRef doubles as the "already started" guard.
+    // React StrictMode cleans up and re-runs effects in dev; using intervalRef
+    // (which cleanup sets to null) means the restart works correctly.
+    if (intervalRef.current) return
+
     playInhaleBeep()
     setPhase('inhale')
 
     intervalRef.current = setInterval(() => {
       setPhase(prev => {
         const next = prev === 'inhale' ? 'exhale' : 'inhale'
-        if (next === 'inhale') {
-          playInhaleBeep()
-        } else {
-          playExhaleBeep()
-        }
+        if (next === 'inhale') playInhaleBeep()
+        else playExhaleBeep()
         return next
       })
     }, PHASE_DURATION)
-  }, [])
-
-  useEffect(() => {
-    if (isRunning) {
-      startCycle()
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
-      }
-      hasStartedRef.current = false
-    }
 
     return () => {
       if (intervalRef.current) {
@@ -46,7 +41,7 @@ export function useBreathingCycle(isRunning: boolean) {
         intervalRef.current = null
       }
     }
-  }, [isRunning, startCycle])
+  }, [isRunning])
 
   return { phase }
 }
