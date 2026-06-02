@@ -33,7 +33,7 @@ export default function Login() {
       navigate('/');
 
     } catch (error) {
-      console.log(error.message);
+      console.log(error instanceof Error ? error.message : error);
     }
 
   }
