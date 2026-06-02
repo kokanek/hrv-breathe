@@ -7,55 +7,24 @@ interface Props {
 }
 
 export default function BreathingCircle({ phase, isRunning }: Props) {
+  const ease = [0.4, 0, 0.2, 1] as [number, number, number, number]
+
   const variants = {
-    inhale: {
-      scale: 1.45,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1] },
-    },
-    exhale: {
-      scale: 1,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1] },
-    },
-    idle: {
-      scale: 1,
-      transition: { duration: 0.5 },
-    },
+    inhale: { scale: 1.45, transition: { duration: 6, ease } },
+    exhale: { scale: 1,    transition: { duration: 6, ease } },
+    idle:   { scale: 1,    transition: { duration: 0.5 } },
   }
 
   const ringVariants = {
-    inhale: {
-      scale: 1.55,
-      opacity: 0.5,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1] },
-    },
-    exhale: {
-      scale: 1.05,
-      opacity: 0.2,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1] },
-    },
-    idle: {
-      scale: 1.05,
-      opacity: 0.2,
-      transition: { duration: 0.5 },
-    },
+    inhale: { scale: 1.55, opacity: 0.5, transition: { duration: 6, ease } },
+    exhale: { scale: 1.05, opacity: 0.2, transition: { duration: 6, ease } },
+    idle:   { scale: 1.05, opacity: 0.2, transition: { duration: 0.5 } },
   }
 
   const outerRingVariants = {
-    inhale: {
-      scale: 1.75,
-      opacity: 0.3,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1], delay: 0.08 },
-    },
-    exhale: {
-      scale: 1.1,
-      opacity: 0.1,
-      transition: { duration: 6, ease: [0.4, 0, 0.2, 1], delay: 0.08 },
-    },
-    idle: {
-      scale: 1.1,
-      opacity: 0.1,
-      transition: { duration: 0.5 },
-    },
+    inhale: { scale: 1.75, opacity: 0.3, transition: { duration: 6, ease, delay: 0.08 } },
+    exhale: { scale: 1.1,  opacity: 0.1, transition: { duration: 6, ease, delay: 0.08 } },
+    idle:   { scale: 1.1,  opacity: 0.1, transition: { duration: 0.5 } },
   }
 
   const currentState = isRunning ? phase : 'idle'
