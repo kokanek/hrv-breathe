@@ -9,4 +9,6 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 })
 
-export default mongoose.model('Session', sessionSchema)
+// Reuse an already-compiled model on warm serverless invocations; compiling
+// the same model twice throws OverwriteModelError.
+export default mongoose.models.Session || mongoose.model('Session', sessionSchema)
