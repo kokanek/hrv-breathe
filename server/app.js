@@ -9,15 +9,20 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-const credString = process.env.CREDS
-const FAMILY_MEMBERS = {}
-if (credString) {
-  credString.split(',').forEach(cred => {
-    const [username, password] = cred.split(':')
-    if (username && password) {
-      FAMILY_MEMBERS[username] = password
-    }
-  })
+// Parse credentials lazily, per-request, from process.env.CREDS so we never
+// depend on env vars being loaded at module-import time.
+function getFamilyMembers() {
+  const members = {}
+  const credString = process.env.CREDS
+  if (credString) {
+    credString.split(',').forEach(cred => {
+      const [username, password] = cred.split(':')
+      if (username && password) {
+        members[username] = password
+      }
+    })
+  }
+  return members
 }
 
 // Constant-time string comparison. Hashing both sides to a fixed 32 bytes first
@@ -35,7 +40,7 @@ app.post('/api/login', (req, res) => {
   // 1. Verify user exists and password matches.
   // Always run the comparison (even for unknown users) so the response time
   // doesn't reveal whether the username exists.
-  const stored = FAMILY_MEMBERS[username];
+  const stored = getFamilyMembers()[username];
   const isMatch = safeEqual(password, stored ?? '') && stored != null;
 
   if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });

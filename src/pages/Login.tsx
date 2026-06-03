@@ -9,10 +9,13 @@ export default function Login() {
   const { phase } = useBreathingCycle(true, true)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
-    // implement call to login endpoint here
+    setError('')
+    setLoading(true)
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -21,7 +24,7 @@ export default function Login() {
       });
 
       if (!response.ok) {
-        throw new Error('Invalid username or password');
+        throw new Error('Wrong username/password');
       }
 
       const data = await response.json();
@@ -32,70 +35,89 @@ export default function Login() {
       // Redirect them to the main app dashboard
       navigate('/');
 
-    } catch (error) {
-      console.log(error instanceof Error ? error.message : error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
     }
-
   }
 
+  const [showPassword, setShowPassword] = useState(false)
+
   return (
-    <div className="h-full relative overflow-hidden">
-      {/* Pastel gradient background */}
-      <div className="absolute inset-0 gradient-bg" />
-
-      {/* Decorative dots */}
-      <div className="absolute top-[18%] right-[14%] w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(168,208,212,0.5)' }} />
-      <div className="absolute top-[32%] left-[12%] w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(251,196,181,0.6)' }} />
-      <div className="absolute bottom-[32%] right-[18%] w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'rgba(184,221,181,0.55)' }} />
-      <div className="absolute bottom-[20%] left-[16%] w-2 h-2 rounded-full" style={{ backgroundColor: 'rgba(216,228,152,0.5)' }} />
-      <div className="absolute top-[55%] right-[10%] w-1 h-1 rounded-full" style={{ backgroundColor: 'rgba(196,184,232,0.6)' }} />
-
-      {/* Page heading */}
-      <h1
-        className="absolute top-32 left-0 right-0 z-20 text-center text-6xl font-bold leading-[1.05] pointer-events-none"
-        style={{ fontFamily: '"Elms Sans", sans-serif' }}
-      >
-        <span className="block text-2xl font-medium tracking-[0.45em] pl-[0.45em] text-teal-600/50">
-          HRV
-        </span>
-        <span className="block bg-linear-to-br from-emerald-400 to-rose-300 bg-clip-text text-transparent drop-shadow-sm">
-          BREATHE
-        </span>
-      </h1>
-
-      {/* Breathing animation background */}
-      <div className="absolute top-12 left-6 flex items-center justify-center pointer-events-none">
+    <div className="h-full relative overflow-hidden bg-white">
+      {/* Breathing animation — centered in the top half, sits in the background */}
+      <div className="absolute top-0 left-0 right-0 h-1/2 flex items-center justify-center pointer-events-none opacity-90">
         <BreathingCircle phase={phase} isRunning={true} isLoginPage={true} />
       </div>
 
-      {/* Content — centered login form */}
-      <div className="absolute top-2/3 left-0 right-0 z-10 flex items-center justify-center px-6 transform -translate-y-1/2">
-        <form
-          onSubmit={handleLogin}
-          className="w-full max-w-xs flex flex-col items-center gap-4"
-        >
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username"
-            autoComplete="username"
-            className="w-full py-4 px-5 rounded-xl bg-white/5 border border-white/40 text-gray-800 placeholder-gray-500 shadow-lg outline-none focus:ring-2 focus:ring-white/60"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            autoComplete="current-password"
-            className="w-full py-4 px-5 rounded-xl bg-white/5 border border-white/40 text-gray-800 placeholder-gray-500 shadow-lg outline-none focus:ring-2 focus:ring-white/60"
-          />
+      {/* Soft fade so the form reads cleanly over the animation */}
+      <div className="absolute inset-x-0 top-1/3 bottom-0 bg-linear-to-b from-transparent via-white/80 to-white pointer-events-none" />
+
+      {/* Content — login form anchored to the bottom half */}
+      <div className="absolute inset-x-0 bottom-0 top-1/3 z-10 flex flex-col justify-center px-6">
+        <h1 className="text-[2rem] leading-tight font-bold tracking-tight text-gray-900 mb-4">
+          Breath Bubbles
+        </h1>
+
+        {/* <h1 className="text-[1rem] leading-tight font-bold tracking-tight text-gray-500 mb-2">
+          Log in to sync progress
+        </h1> */}
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-3">
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 focus-within:border-gray-900 transition-colors">
+            <label className="block text-xs font-medium text-gray-400 mb-0.5">Email</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="username"
+              className="w-full bg-transparent text-lg text-gray-900 placeholder-gray-300 outline-none"
+            />
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 focus-within:border-gray-900 transition-colors">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-medium text-gray-400 mb-0.5">Password</label>
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword((s) => !s)}
+                className="text-sm font-semibold text-gray-900 underline underline-offset-2"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              className="w-full bg-transparent text-lg text-gray-900 placeholder-gray-300 outline-none"
+            />
+          </div>
+
           <button
             type="submit"
-            className="w-48 py-4 rounded-xl bg-gray-800 text-white font-semibold text-lg flex items-center justify-center gap-2 shadow-lg"
+            disabled={loading}
+            className="mt-3 w-full py-4 rounded-full bg-gray-900 text-white font-semibold text-lg shadow-sm active:scale-[0.99] transition-transform flex items-center justify-center gap-2 disabled:opacity-70 disabled:active:scale-100"
           >
-            Login
+            {loading ? (
+              <>
+                <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                Logging in…
+              </>
+            ) : (
+              'Log in'
+            )}
           </button>
+
+          {/* Always-present container reserves space so the button stays put */}
+          <p className="mt-1 h-5 text-center text-sm font-medium text-red-500">
+            {error}
+          </p>
         </form>
       </div>
     </div>
