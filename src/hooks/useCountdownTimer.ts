@@ -29,7 +29,7 @@ export function useCountdownTimer(isRunning: boolean, totalSeconds: number) {
     }
   }, [isRunning, remainingSeconds])
 
-  const isComplete = remainingSeconds === 0 && isRunning
+  const isComplete = remainingSeconds === 0 && totalSeconds > 0
   const elapsedSeconds = totalSeconds - remainingSeconds
 
   return { remainingSeconds, elapsedSeconds, isComplete }

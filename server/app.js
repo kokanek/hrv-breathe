@@ -90,4 +90,19 @@ app.post('/api/sessions', async (req, res) => {
   }
 })
 
+app.patch('/api/sessions/:id', async (req, res) => {
+  try {
+    const { tags } = req.body
+    const session = await Session.findOneAndUpdate(
+      { _id: req.params.id, user: req.user },
+      { tags: tags || [] },
+      { new: true }
+    )
+    if (!session) return res.status(404).json({ error: 'Session not found' })
+    res.json({ session })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update session' })
+  }
+})
+
 export default app

@@ -58,3 +58,14 @@ export async function createSession(session: {
   const data = await res.json()
   return data.session
 }
+
+export async function updateSessionTags(id: string, tags: string[]): Promise<SessionData> {
+  const res = await fetchWithAuth(`${BASE}/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tags }),
+  })
+  if (!res.ok) throw new Error('Failed to update session')
+  const data = await res.json()
+  return data.session
+}

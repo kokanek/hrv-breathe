@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import BreathingCircle from '../components/BreathingCircle'
 import TagSelector from '../components/TagSelector'
 import { useBreathingCycle } from '../hooks/useBreathingCycle'
 import { useCountdownTimer } from '../hooks/useCountdownTimer'
-import { createSession } from '../utils/api'
+import { createSession, updateSessionTags } from '../utils/api'
 
 export default function SessionPage() {
   const [searchParams] = useSearchParams()
@@ -13,32 +13,46 @@ export default function SessionPage() {
   const totalSeconds = durationMinutes * 60
 
   const [isRunning, setIsRunning] = useState(true)
-  const [showTags, setShowTags] = useState(false)
+  const [showEndConfirm, setShowEndConfirm] = useState(false)
   const startTimeRef = useRef(new Date())
+  const savedIdRef = useRef<string | null>(null)
 
-  const { phase } = useBreathingCycle(isRunning)
   const { remainingSeconds, elapsedSeconds, isComplete } = useCountdownTimer(isRunning, totalSeconds)
+  // Stop the breathing animation when the timer finishes naturally.
+  const activelyRunning = isRunning && !isComplete
+  const { phase } = useBreathingCycle(activelyRunning)
 
-  const stopSession = useCallback(() => {
-    setIsRunning(false)
-    setShowTags(true)
-  }, [])
+  // showTags is derived — stays true once the timer hits zero.
+  const showTags = isComplete
 
+  // Fire the API call once when the timer finishes (pure side effect, no setState).
   useEffect(() => {
-    if (isComplete) {
-      stopSession()
-    }
-  }, [isComplete, stopSession])
+    if (!isComplete || savedIdRef.current) return
+    createSession({
+      startTime: startTimeRef.current.toISOString(),
+      endTime: new Date().toISOString(),
+      durationSeconds: totalSeconds,
+      tags: [],
+    })
+      .then(session => { savedIdRef.current = session._id })
+      .catch(() => { })
+  }, [isComplete, totalSeconds])
+
+  const togglePause = () => setIsRunning(prev => !prev)
+  const endWithoutSaving = () => navigate('/')
 
   const handleSave = async (tags: string[]) => {
-    const endTime = new Date()
     try {
-      await createSession({
-        startTime: startTimeRef.current.toISOString(),
-        endTime: endTime.toISOString(),
-        durationSeconds: elapsedSeconds,
-        tags,
-      })
+      if (savedIdRef.current) {
+        await updateSessionTags(savedIdRef.current, tags)
+      } else {
+        await createSession({
+          startTime: startTimeRef.current.toISOString(),
+          endTime: new Date().toISOString(),
+          durationSeconds: elapsedSeconds,
+          tags,
+        })
+      }
     } catch {
       // Silently fail — session still navigates to activity
     }
@@ -46,16 +60,17 @@ export default function SessionPage() {
   }
 
   const handleSkip = async () => {
-    const endTime = new Date()
-    try {
-      await createSession({
-        startTime: startTimeRef.current.toISOString(),
-        endTime: endTime.toISOString(),
-        durationSeconds: elapsedSeconds,
-        tags: [],
-      })
-    } catch {
-      // Silently fail
+    if (!savedIdRef.current) {
+      try {
+        await createSession({
+          startTime: startTimeRef.current.toISOString(),
+          endTime: new Date().toISOString(),
+          durationSeconds: elapsedSeconds,
+          tags: [],
+        })
+      } catch {
+        // Silently fail
+      }
     }
     navigate('/activity')
   }
@@ -81,7 +96,7 @@ export default function SessionPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 pt-6 pb-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => setShowEndConfirm(true)}
             className="w-10 h-10 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center shadow-sm"
           >
             <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -104,20 +119,30 @@ export default function SessionPage() {
           </p>
 
           <div className="flex items-center gap-2 mb-8">
-            <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#a8d0d4' }} />
+            <span
+              className={`w-2 h-2 rounded-full ${activelyRunning ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: activelyRunning ? '#a8d0d4' : '#c4b8e8' }}
+            />
             <span className="text-gray-500 text-xs font-medium tracking-widest uppercase">
-              Session Active
+              {activelyRunning ? 'Session Active' : 'Paused'}
             </span>
           </div>
 
           <button
-            onClick={stopSession}
+            onClick={togglePause}
             className="w-full max-w-xs py-4 rounded-2xl bg-gray-800 text-white font-semibold text-lg flex items-center justify-center gap-2 shadow-lg"
           >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-            </svg>
-            Stop Session
+            {activelyRunning ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+            {activelyRunning ? 'Pause' : 'Resume'}
           </button>
         </div>
       </div>
@@ -125,6 +150,32 @@ export default function SessionPage() {
       {/* Tag Selector */}
       {showTags && (
         <TagSelector onSave={handleSave} onSkip={handleSkip} elapsedSeconds={elapsedSeconds} />
+      )}
+
+      {/* End-session confirmation */}
+      {showEndConfirm && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center px-6 bg-black/30 backdrop-blur-sm">
+          <div className="w-full max-w-xs bg-white rounded-3xl p-6 shadow-xl">
+            <h2 className="text-gray-800 text-lg font-semibold mb-2">End session?</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Your current session won't be saved.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="flex-1 py-3 rounded-2xl bg-gray-100 text-gray-700 font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={endWithoutSaving}
+                className="flex-1 py-3 rounded-2xl bg-gray-800 text-white font-semibold"
+              >
+                End
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
