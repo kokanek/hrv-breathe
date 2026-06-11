@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import DurationBubbles from '../components/DurationBubbles'
 import { initAudio } from '../utils/audio'
 import { useInstallPrompt } from '../hooks/useInstallPrompt'
+import { useSessionStore } from '../stores/sessionStore'
 
 export default function HomePage() {
   const [minutes, setMinutes] = useState(5)
   const navigate = useNavigate()
   const { canInstall, promptInstall } = useInstallPrompt()
+
+  // Warm up Mongo / the serverless fn and prime the session store on app open.
+  useEffect(() => {
+    useSessionStore.getState().load()
+  }, [])
 
   const decrement = () => setMinutes(m => Math.max(1, m - 1))
   const increment = () => setMinutes(m => Math.min(30, m + 1))

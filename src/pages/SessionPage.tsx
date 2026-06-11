@@ -4,7 +4,8 @@ import BreathingCircle from '../components/BreathingCircle'
 import TagSelector from '../components/TagSelector'
 import { useBreathingCycle } from '../hooks/useBreathingCycle'
 import { useCountdownTimer } from '../hooks/useCountdownTimer'
-import { createSession, updateSessionTags } from '../utils/api'
+import { useSessionStore } from '../stores/sessionStore'
+import { playGong } from '../utils/audio'
 
 export default function SessionPage() {
   const [searchParams] = useSearchParams()
@@ -14,6 +15,10 @@ export default function SessionPage() {
 
   const [isRunning, setIsRunning] = useState(true)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
+  // Tracks the initial save fired on completion — gates the tag panel.
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  // Tracks the tag-update request, to guard against double-tap.
+  const [submitting, setSubmitting] = useState(false)
   const startTimeRef = useRef(new Date())
   const savedIdRef = useRef<string | null>(null)
 
@@ -22,31 +27,41 @@ export default function SessionPage() {
   const activelyRunning = isRunning && !isComplete
   const { phase } = useBreathingCycle(activelyRunning)
 
-  // showTags is derived — stays true once the timer hits zero.
-  const showTags = isComplete
+  // Show the tag panel only once the initial save resolves (saved, or errored as a fallback).
+  const showTags = saveStatus === 'saved' || saveStatus === 'error'
 
-  // Fire the API call once when the timer finishes (pure side effect, no setState).
+  // On completion: gong + save exactly once. The 'idle' state guard is StrictMode-safe.
   useEffect(() => {
-    if (!isComplete || savedIdRef.current) return
-    createSession({
-      startTime: startTimeRef.current.toISOString(),
-      endTime: new Date().toISOString(),
-      durationSeconds: totalSeconds,
-      tags: [],
-    })
-      .then(session => { savedIdRef.current = session._id })
-      .catch(() => { })
-  }, [isComplete, totalSeconds])
+    if (!isComplete || saveStatus !== 'idle') return
+    playGong()
+    setSaveStatus('saving')
+    useSessionStore
+      .getState()
+      .addSession({
+        startTime: startTimeRef.current.toISOString(),
+        endTime: new Date().toISOString(),
+        durationSeconds: totalSeconds,
+        tags: [],
+      })
+      .then(session => {
+        savedIdRef.current = session._id
+        setSaveStatus('saved')
+      })
+      .catch(() => setSaveStatus('error'))
+  }, [isComplete, saveStatus, totalSeconds])
 
   const togglePause = () => setIsRunning(prev => !prev)
   const endWithoutSaving = () => navigate('/')
 
   const handleSave = async (tags: string[]) => {
+    if (submitting) return
+    setSubmitting(true)
     try {
       if (savedIdRef.current) {
-        await updateSessionTags(savedIdRef.current, tags)
+        await useSessionStore.getState().setTags(savedIdRef.current, tags)
       } else {
-        await createSession({
+        // Fallback: the initial save errored, so create the session now.
+        await useSessionStore.getState().addSession({
           startTime: startTimeRef.current.toISOString(),
           endTime: new Date().toISOString(),
           durationSeconds: elapsedSeconds,
@@ -60,9 +75,11 @@ export default function SessionPage() {
   }
 
   const handleSkip = async () => {
+    if (submitting) return
+    setSubmitting(true)
     if (!savedIdRef.current) {
       try {
-        await createSession({
+        await useSessionStore.getState().addSession({
           startTime: startTimeRef.current.toISOString(),
           endTime: new Date().toISOString(),
           durationSeconds: elapsedSeconds,
@@ -147,9 +164,24 @@ export default function SessionPage() {
         </div>
       </div>
 
+      {/* Saving indicator — blocks interaction while the initial save is in flight */}
+      {saveStatus === 'saving' && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center px-6 bg-black/30 backdrop-blur-sm">
+          <div className="w-full max-w-xs bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 border-emerald-300 border-t-emerald-800 rounded-full animate-spin" />
+            <p className="text-gray-700 font-semibold">Saving your session…</p>
+          </div>
+        </div>
+      )}
+
       {/* Tag Selector */}
       {showTags && (
-        <TagSelector onSave={handleSave} onSkip={handleSkip} elapsedSeconds={elapsedSeconds} />
+        <TagSelector
+          onSave={handleSave}
+          onSkip={handleSkip}
+          elapsedSeconds={elapsedSeconds}
+          isSaving={submitting}
+        />
       )}
 
       {/* End-session confirmation */}

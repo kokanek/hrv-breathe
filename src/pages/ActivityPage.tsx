@@ -1,33 +1,22 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ActivityItem from '../components/ActivityItem'
-import { fetchSessions, fetchStats } from '../utils/api'
-import type { SessionData, StatsData } from '../utils/api'
+import { useSessionStore } from '../stores/sessionStore'
 
 export default function ActivityPage() {
   const navigate = useNavigate()
-  const [sessions, setSessions] = useState<SessionData[]>([])
-  const [stats, setStats] = useState<StatsData>({ totalSessions: 0, totalMinutes: 0 })
-  const [loading, setLoading] = useState(true)
+  const sessions = useSessionStore(s => s.sessions)
+  const stats = useSessionStore(s => s.stats)
+  const status = useSessionStore(s => s.status)
 
+  // Render cached (warmed) data immediately, then revalidate in the background.
   useEffect(() => {
-    async function load() {
-      try {
-        const [sessionsData, statsData] = await Promise.all([
-          fetchSessions(),
-          fetchStats(),
-        ])
-        setSessions(sessionsData)
-        setStats(statsData)
-      } catch {
-        // API unavailable — show empty state
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
+    useSessionStore.getState().load()
   }, [])
+
+  // Only block with a spinner on a cold load; otherwise refresh silently.
+  const loading = status === 'loading' && sessions.length === 0
 
   return (
     <div className="h-full flex flex-col bg-slate-50">

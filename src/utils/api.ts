@@ -30,6 +30,13 @@ export interface StatsData {
   totalMinutes: number
 }
 
+export interface CreateSessionInput {
+  startTime: string
+  endTime: string
+  durationSeconds: number
+  tags: string[]
+}
+
 export async function fetchSessions(): Promise<SessionData[]> {
   const res = await fetchWithAuth(`${BASE}/sessions`)
   if (!res.ok) throw new Error('Failed to fetch sessions')
@@ -43,12 +50,7 @@ export async function fetchStats(): Promise<StatsData> {
   return res.json()
 }
 
-export async function createSession(session: {
-  startTime: string
-  endTime: string
-  durationSeconds: number
-  tags: string[]
-}): Promise<SessionData> {
+export async function createSession(session: CreateSessionInput): Promise<SessionData> {
   const res = await fetchWithAuth(`${BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -17,9 +17,10 @@ interface Props {
   onSave: (tags: string[]) => void
   onSkip: () => void
   elapsedSeconds: number
+  isSaving?: boolean
 }
 
-export default function TagSelector({ onSave, onSkip, elapsedSeconds }: Props) {
+export default function TagSelector({ onSave, onSkip, elapsedSeconds, isSaving = false }: Props) {
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set())
 
   const toggle = (tag: string) => {
@@ -76,15 +77,17 @@ export default function TagSelector({ onSave, onSkip, elapsedSeconds }: Props) {
           <div className="flex gap-3">
             <button
               onClick={onSkip}
-              className="flex-1 py-3.5 rounded-2xl text-gray-500 font-medium border border-gray-200"
+              disabled={isSaving}
+              className="flex-1 py-3.5 rounded-2xl text-gray-500 font-medium border border-gray-200 disabled:opacity-50"
             >
               Skip
             </button>
             <button
               onClick={() => onSave(Array.from(selectedTags))}
-              className="flex-1 py-3.5 rounded-2xl bg-gray-800 text-white font-semibold shadow-lg"
+              disabled={isSaving}
+              className="flex-1 py-3.5 rounded-2xl bg-gray-800 text-white font-semibold shadow-lg disabled:opacity-50"
             >
-              Save Session
+              {isSaving ? 'Saving…' : 'Save Session'}
             </button>
           </div>
         </motion.div>
