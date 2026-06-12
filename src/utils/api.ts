@@ -61,6 +61,21 @@ export async function createSession(session: CreateSessionInput): Promise<Sessio
   return data.session
 }
 
+// Mirror the journal app's key formats: monthKey `journal_YYYY_M` (month not
+// zero-padded), dateKey `YYYY-MM-DD`. Computed client-side so the entry lands
+// on the user's local day regardless of server timezone.
+export async function logBreathingToJournal(): Promise<void> {
+  const now = new Date()
+  const monthKey = `journal_${now.getFullYear()}_${now.getMonth() + 1}`
+  const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const res = await fetchWithAuth(`${BASE}/journal/breathing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ monthKey, dateKey, timestamp: now.toISOString() }),
+  })
+  if (!res.ok) throw new Error('Failed to save journal entry')
+}
+
 export async function updateSessionTags(id: string, tags: string[]): Promise<SessionData> {
   const res = await fetchWithAuth(`${BASE}/sessions/${id}`, {
     method: 'PATCH',

@@ -1,14 +1,29 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import ActivityItem from '../components/ActivityItem'
 import { useSessionStore } from '../stores/sessionStore'
+import { getSaveToJournal, setSaveToJournal } from '../utils/settings'
 
 export default function ActivityPage() {
   const navigate = useNavigate()
   const sessions = useSessionStore(s => s.sessions)
   const stats = useSessionStore(s => s.stats)
   const status = useSessionStore(s => s.status)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [saveToJournal, setSaveToJournalState] = useState(getSaveToJournal)
+
+  const toggleSaveToJournal = () => {
+    setSaveToJournalState(prev => {
+      setSaveToJournal(!prev)
+      return !prev
+    })
+  }
+
+  const logout = () => {
+    localStorage.removeItem('hrv_app_token')
+    navigate('/login', { replace: true })
+  }
 
   // Render cached (warmed) data immediately, then revalidate in the background.
   useEffect(() => {
@@ -22,7 +37,11 @@ export default function ActivityPage() {
     <div className="h-full flex flex-col bg-slate-50">
       {/* Header */}
       <header className="flex items-center justify-between px-6 pt-6 pb-2">
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2"
+          aria-label="Go home"
+        >
           <svg className="w-6 h-6 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <circle cx="12" cy="12" r="3" />
             <circle cx="6" cy="6" r="1.5" />
@@ -31,16 +50,52 @@ export default function ActivityPage() {
             <circle cx="18" cy="18" r="1.5" />
           </svg>
           <span className="text-lg font-bold text-gray-800">Breathe Bubbles</span>
-        </div>
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
-          aria-label="Go home"
-        >
-          <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-          </svg>
         </button>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen(prev => !prev)}
+            className="p-2 rounded-xl hover:bg-gray-100 transition-colors"
+            aria-label="Open menu"
+            aria-expanded={menuOpen}
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
+            </svg>
+          </button>
+          {menuOpen && (
+            <>
+              {/* Click-away backdrop */}
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 z-40 w-52 bg-white rounded-2xl shadow-lg border border-gray-100 py-2">
+                <button
+                  onClick={toggleSaveToJournal}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Save to journal
+                  <span
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                      saveToJournal ? 'bg-gray-800 border-gray-800' : 'border-gray-300'
+                    }`}
+                  >
+                    {saveToJournal && (
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+                <button
+                  onClick={logout}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-8">

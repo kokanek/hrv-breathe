@@ -90,6 +90,54 @@ app.post('/api/sessions', async (req, res) => {
   }
 })
 
+// Journal integration: the journal app (log-journal.vercel.app) stores each
+// month as one Redis blob keyed `<username>:<monthKey>`, shaped
+// { "YYYY-MM-DD": JournalEntry[] }. Its API has no CORS headers, so the
+// browser can't call it directly — we proxy the read-modify-write here.
+// The client supplies monthKey/dateKey/timestamp so "today" is the user's
+// local day, not the server's (Vercel runs in UTC).
+const JOURNAL_API_URL = process.env.JOURNAL_API_URL || 'https://log-journal.vercel.app'
+
+app.post('/api/journal/breathing', requireAuth, async (req, res) => {
+  const { monthKey, dateKey, timestamp } = req.body
+  if (
+    !/^journal_\d{4}_\d{1,2}$/.test(monthKey || '') ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateKey || '') ||
+    !timestamp || isNaN(Date.parse(timestamp))
+  ) {
+    return res.status(400).json({ error: 'Invalid monthKey, dateKey or timestamp' })
+  }
+
+  try {
+    const params = `username=${encodeURIComponent(req.user)}&monthKey=${encodeURIComponent(monthKey)}`
+    const getRes = await fetch(`${JOURNAL_API_URL}/api/getlog?${params}`)
+    if (!getRes.ok) throw new Error(`getlog responded ${getRes.status}`)
+    const month = (await getRes.json()) || {}
+
+    const entry = {
+      id: Date.now().toString(),
+      text: 'Breathing session completed',
+      timestamp,
+      color: 'blue',
+      tags: [{ id: 'hrv-app', text: 'HRV app', emoji: '🧘', color: 'blue' }],
+    }
+    month[dateKey] = [...(month[dateKey] || []), entry].sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    )
+
+    const saveRes = await fetch(`${JOURNAL_API_URL}/api/savelog?${params}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(month),
+    })
+    if (!saveRes.ok) throw new Error(`savelog responded ${saveRes.status}`)
+
+    res.status(201).json({ entry })
+  } catch (err) {
+    res.status(502).json({ error: 'Failed to save journal entry' })
+  }
+})
+
 app.patch('/api/sessions/:id', async (req, res) => {
   try {
     const { tags } = req.body
