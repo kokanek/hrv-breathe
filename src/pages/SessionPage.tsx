@@ -6,6 +6,8 @@ import { useBreathingCycle } from '../hooks/useBreathingCycle'
 import { useCountdownTimer } from '../hooks/useCountdownTimer'
 import { useSessionStore } from '../stores/sessionStore'
 import { playGong } from '../utils/audio'
+import { logBreathingToJournal } from '../utils/api'
+import { getSaveToJournal } from '../utils/settings'
 
 export default function SessionPage() {
   const [searchParams] = useSearchParams()
@@ -35,6 +37,11 @@ export default function SessionPage() {
     if (!isComplete || saveStatus !== 'idle') return
     playGong()
     setSaveStatus('saving')
+    // Mirror the completed session into the journal app, if enabled. Fire and
+    // forget — journal availability shouldn't block or fail the session save.
+    if (getSaveToJournal()) {
+      logBreathingToJournal().catch(() => {})
+    }
     useSessionStore
       .getState()
       .addSession({
