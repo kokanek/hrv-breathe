@@ -10,32 +10,36 @@ function getAudioContext(): AudioContext {
   return audioCtx
 }
 
-function playBeep(frequency: number, durationMs: number): void {
-  const ctx = getAudioContext()
-  const oscillator = ctx.createOscillator()
-  const gainNode = ctx.createGain()
+// Breath recordings, played alternately for the duration of each phase.
+let inhaleAudio: HTMLAudioElement | null = null
+let exhaleAudio: HTMLAudioElement | null = null
 
-  oscillator.connect(gainNode)
-  gainNode.connect(ctx.destination)
-
-  oscillator.type = 'sine'
-  oscillator.frequency.setValueAtTime(frequency, ctx.currentTime)
-
-  gainNode.gain.setValueAtTime(0, ctx.currentTime)
-  gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.01)
-  gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + durationMs / 1000)
-
-  oscillator.start(ctx.currentTime)
-  oscillator.stop(ctx.currentTime + durationMs / 1000)
+function getBreathAudio(): { inhale: HTMLAudioElement; exhale: HTMLAudioElement } {
+  if (!inhaleAudio) {
+    inhaleAudio = new Audio('/in_breath.mp3')
+    inhaleAudio.preload = 'auto'
+  }
+  if (!exhaleAudio) {
+    exhaleAudio = new Audio('/out_breath.mp3')
+    exhaleAudio.preload = 'auto'
+  }
+  return { inhale: inhaleAudio, exhale: exhaleAudio }
 }
 
-export function playInhaleBeep(): void {
-  playBeep(523.25, 200)
+function playClip(audio: HTMLAudioElement): void {
+  // Restart from the top so a clip re-triggers cleanly even if the previous
+  // phase's playback hasn't fully finished.
+  audio.pause()
+  audio.currentTime = 0
+  audio.play().catch(() => {})
 }
 
-export function playExhaleBeep(): void {
-  playBeep(440, 120)
-  setTimeout(() => playBeep(440, 120), 200)
+export function playInhaleSound(): void {
+  playClip(getBreathAudio().inhale)
+}
+
+export function playExhaleSound(): void {
+  playClip(getBreathAudio().exhale)
 }
 
 export function playGong(): void {
@@ -62,4 +66,21 @@ export function playGong(): void {
 
 export function initAudio(): void {
   getAudioContext()
+  // Unlock the breath clips inside the user gesture that calls this, so the
+  // mid-session plays (which have no gesture of their own) aren't blocked by
+  // the browser's autoplay policy. Play muted, then immediately reset.
+  const { inhale, exhale } = getBreathAudio()
+  for (const audio of [inhale, exhale]) {
+    audio.muted = true
+    audio
+      .play()
+      .then(() => {
+        audio.pause()
+        audio.currentTime = 0
+        audio.muted = false
+      })
+      .catch(() => {
+        audio.muted = false
+      })
+  }
 }

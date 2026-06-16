@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { playInhaleBeep, playExhaleBeep } from '../utils/audio'
+import { playInhaleSound, playExhaleSound } from '../utils/audio'
 
 export type Phase = 'inhale' | 'exhale'
 
@@ -23,15 +23,15 @@ export function useBreathingCycle(isRunning: boolean, isLoginPage = false) {
     // (which cleanup sets to null) means the restart works correctly.
     if (intervalRef.current) return
 
-    if (!isLoginPage) playInhaleBeep()
+    if (!isLoginPage) playInhaleSound()
     setPhase('inhale')
 
     intervalRef.current = setInterval(() => {
       setPhase(prev => {
         const next = prev === 'inhale' ? 'exhale' : 'inhale'
         if (!isLoginPage) {
-          if (next === 'inhale') playInhaleBeep()
-          else playExhaleBeep()
+          if (next === 'inhale') playInhaleSound()
+          else playExhaleSound()
         }
         return next
       })
