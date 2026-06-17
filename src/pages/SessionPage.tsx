@@ -4,6 +4,7 @@ import BreathingCircle from '../components/BreathingCircle'
 import TagSelector from '../components/TagSelector'
 import { useBreathingCycle } from '../hooks/useBreathingCycle'
 import { useCountdownTimer } from '../hooks/useCountdownTimer'
+import { useWakeLock } from '../hooks/useWakeLock'
 import { useSessionStore } from '../stores/sessionStore'
 import { playGong } from '../utils/audio'
 import { logBreathingToJournal } from '../utils/api'
@@ -27,7 +28,16 @@ export default function SessionPage() {
   const { remainingSeconds, elapsedSeconds, isComplete } = useCountdownTimer(isRunning, totalSeconds)
   // Stop the breathing animation when the timer finishes naturally.
   const activelyRunning = isRunning && !isComplete
-  const { phase } = useBreathingCycle(activelyRunning)
+  // Stop the breathing cues a second before the timer ends. Sessions are whole
+  // minutes and phases are 6s, so the final phase boundary lands exactly on
+  // completion — without this, a new phase's start sound would ring at the same
+  // instant as the completion gong.
+  const breathingRunning = isRunning && remainingSeconds > 1
+  const { phase } = useBreathingCycle(breathingRunning)
+
+  // Hold the screen awake for the duration so the OS screen-timeout doesn't
+  // pause the audio and animation mid-session.
+  useWakeLock(activelyRunning)
 
   // Show the tag panel only once the initial save resolves (saved, or errored as a fallback).
   const showTags = saveStatus === 'saved' || saveStatus === 'error'

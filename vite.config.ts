@@ -9,6 +9,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Default globs don't include audio; precache the breath clips so they
+        // still play when the installed PWA is used offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3}'],
+      },
       manifest: {
         name: 'Breathe Bubbles',
         short_name: 'Breathe',
