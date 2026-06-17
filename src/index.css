@@ -2,7 +2,11 @@
 
 html, body, #root {
   height: 100%;
-  height: 100dvh;
+  /* Use the small viewport height so the fixed app shell always fits within
+     the visible area even while the mobile browser toolbar is shown. dvh can
+     briefly report the toolbar-hidden (larger) height on load/refresh, which
+     pushed the bottom button out of view. */
+  height: 100svh;
   margin: 0;
   padding: 0;
 }
