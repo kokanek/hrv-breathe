@@ -91,7 +91,7 @@ app.post('/api/sessions', async (req, res) => {
 })
 
 // Journal integration: the journal app (log-journal.vercel.app) stores each
-// month as one Redis blob keyed `<username>:<monthKey>`, shaped
+// month as one Redis blob keyed `journal:<username>:<monthKey>`, shaped
 // { "YYYY-MM-DD": JournalEntry[] }. Its API has no CORS headers, so the
 // browser can't call it directly — we proxy the read-modify-write here.
 // The client supplies monthKey/dateKey/timestamp so "today" is the user's
@@ -101,7 +101,7 @@ const JOURNAL_API_URL = process.env.JOURNAL_API_URL || 'https://log-journal.verc
 app.post('/api/journal/breathing', requireAuth, async (req, res) => {
   const { monthKey, dateKey, timestamp } = req.body
   if (
-    !/^journal_\d{4}_\d{1,2}$/.test(monthKey || '') ||
+    !/^\d{4}_\d{1,2}$/.test(monthKey || '') ||
     !/^\d{4}-\d{2}-\d{2}$/.test(dateKey || '') ||
     !timestamp || isNaN(Date.parse(timestamp))
   ) {

@@ -61,12 +61,14 @@ export async function createSession(session: CreateSessionInput): Promise<Sessio
   return data.session
 }
 
-// Mirror the journal app's key formats: monthKey `journal_YYYY_M` (month not
-// zero-padded), dateKey `YYYY-MM-DD`. Computed client-side so the entry lands
-// on the user's local day regardless of server timezone.
+// Mirror the journal app's key formats: monthKey `YYYY_M` (month not
+// zero-padded), dateKey `YYYY-MM-DD`. The journal app builds the Redis key as
+// `journal:<username>:<monthKey>`, so the app prefix and username are added on
+// its side. Computed client-side so the entry lands on the user's local day
+// regardless of server timezone.
 export async function logBreathingToJournal(): Promise<void> {
   const now = new Date()
-  const monthKey = `journal_${now.getFullYear()}_${now.getMonth() + 1}`
+  const monthKey = `${now.getFullYear()}_${now.getMonth() + 1}`
   const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   const res = await fetchWithAuth(`${BASE}/journal/breathing`, {
     method: 'POST',
