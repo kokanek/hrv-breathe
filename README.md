@@ -2,6 +2,8 @@
 
 HRV breathing tracker PWA built with Vite + React + TypeScript.
 
+Also integrates with Journal app. 
+
 ## Setup
 
 ```bash
