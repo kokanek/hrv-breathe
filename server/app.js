@@ -14,7 +14,7 @@ app.use(express.json())
 // requireAuth keeps verifying with JWT_SECRET unchanged.
 app.post('/api/login', async (req, res) => {
   try {
-    const workerRes = await fetch(process.env.AUTH_WORKER_URL, {
+    const workerRes = await fetch(`${process.env.AUTH_WORKER_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
