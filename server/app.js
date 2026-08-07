@@ -1,54 +1,33 @@
-import crypto from 'node:crypto'
 import express from 'express'
 import cors from 'cors'
 import Session from './models/Session.js'
 import requireAuth from './middleware/auth.js'
-import { signToken } from './utils/jwt.js'
 
 const app = express()
 app.use(cors())
 app.use(express.json())
 
-// Parse credentials lazily, per-request, from process.env.CREDS so we never
-// depend on env vars being loaded at module-import time.
-function getFamilyMembers() {
-  const members = {}
-  const credString = process.env.CREDS
-  if (credString) {
-    credString.split(',').forEach(cred => {
-      const [username, password] = cred.split(':')
-      if (username && password) {
-        members[username] = password
-      }
+// Login is handled by an external Cloudflare Worker that owns the credentials
+// (CREDS) and the signing secret. We proxy the request through so the browser
+// keeps talking to a single origin and the family credentials never live in
+// this app. The Worker mints the same HS256 { token } this route used to, so
+// requireAuth keeps verifying with JWT_SECRET unchanged.
+app.post('/api/login', async (req, res) => {
+  try {
+    const workerRes = await fetch(process.env.AUTH_WORKER_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Only sent when configured, so the Worker can reject direct callers.
+        ...(process.env.PROXY_SECRET && { 'X-Proxy-Secret': process.env.PROXY_SECRET }),
+      },
+      body: JSON.stringify(req.body ?? {}),
     })
+    const data = await workerRes.json().catch(() => ({ error: 'Auth service error' }))
+    return res.status(workerRes.status).json(data)
+  } catch (err) {
+    return res.status(502).json({ error: 'Auth service unavailable' })
   }
-  return members
-}
-
-// Constant-time string comparison. Hashing both sides to a fixed 32 bytes first
-// keeps the buffers equal-length (timingSafeEqual throws otherwise) and avoids
-// leaking the password length through timing.
-function safeEqual(a, b) {
-  const ah = crypto.createHash('sha256').update(String(a)).digest()
-  const bh = crypto.createHash('sha256').update(String(b)).digest()
-  return crypto.timingSafeEqual(ah, bh)
-}
-
-app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-
-  // 1. Verify user exists and password matches.
-  // Always run the comparison (even for unknown users) so the response time
-  // doesn't reveal whether the username exists.
-  const stored = getFamilyMembers()[username];
-  const isMatch = safeEqual(password, stored ?? '') && stored != null;
-
-  if (!isMatch) return res.status(401).json({ error: "Invalid credentials" });
-
-  // 2. Generate a token that lasts for 1 year (hassle-free!)
-  const token = signToken({ user: username }, process.env.JWT_SECRET, { expiresIn: '365d' });
-
-  return res.json({ token });
 });
 
 // Protect every /api/sessions* route — login stays public so tokens can be issued.
