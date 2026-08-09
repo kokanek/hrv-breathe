@@ -75,6 +75,12 @@ app.post('/api/sessions', async (req, res) => {
 // browser can't call it directly — we proxy the read-modify-write here.
 // The client supplies monthKey/dateKey/timestamp so "today" is the user's
 // local day, not the server's (Vercel runs in UTC).
+//
+// The journal API now authenticates every getlog/savelog call with the same
+// Bearer token this app uses (both verify against the shared JWT_SECRET), and
+// derives the username from that token — it no longer accepts a ?username=
+// param. So we forward the caller's Authorization header and send only
+// monthKey in the query string.
 const JOURNAL_API_URL = process.env.JOURNAL_API_URL || 'https://log-journal.vercel.app'
 
 app.post('/api/journal/breathing', requireAuth, async (req, res) => {
@@ -88,8 +94,13 @@ app.post('/api/journal/breathing', requireAuth, async (req, res) => {
   }
 
   try {
-    const params = `username=${encodeURIComponent(req.user)}&monthKey=${encodeURIComponent(monthKey)}`
-    const getRes = await fetch(`${JOURNAL_API_URL}/api/getlog?${params}`)
+    // Forward the caller's token so the journal API can authenticate the
+    // request and resolve the username from it.
+    const authHeader = req.headers['authorization']
+    const params = `monthKey=${encodeURIComponent(monthKey)}`
+    const getRes = await fetch(`${JOURNAL_API_URL}/api/getlog?${params}`, {
+      headers: { Authorization: authHeader },
+    })
     if (!getRes.ok) throw new Error(`getlog responded ${getRes.status}`)
     const month = (await getRes.json()) || {}
 
@@ -106,7 +117,7 @@ app.post('/api/journal/breathing', requireAuth, async (req, res) => {
 
     const saveRes = await fetch(`${JOURNAL_API_URL}/api/savelog?${params}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify(month),
     })
     if (!saveRes.ok) throw new Error(`savelog responded ${saveRes.status}`)
